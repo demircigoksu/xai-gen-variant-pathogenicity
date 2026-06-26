@@ -1,0 +1,18 @@
+# Veri (yarışma tarafından sağlanır — depoya konmaz)
+data/
+*.csv
+
+# Eğitilmiş modeller ve çıktılar (büyük; yerelde üretilir)
+models/
+models_reverse_eval/
+outputs/
+outputs_reverse_eval/
+archive/
+*.pkl
+*.cbm
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store

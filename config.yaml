@@ -1,0 +1,216 @@
+# =====================================================================
+# Genetik Varyant Siniflandirma - Konfigurasyon Dosyasi
+# Proje Sunus Raporuna birebir uyumlu pipeline ayarlari.
+# =====================================================================
+
+paths:
+  data_dir: "data"
+  outputs_dir: "outputs"
+  models_dir: "models"
+
+panels:
+  MASTER:
+    file: "YARISMA_TRAIN_MASTER.csv"
+    pdf_announced_distribution: "1500 Patojenik / 1500 Benign"
+  KANSER:
+    file: "YARISMA_TRAIN_KANSER.csv"
+    pdf_announced_distribution: "200 Patojenik / 200 Benign"
+    # ADIM 8 (2026-06-22): missingness KANSER'de gercek kazanc (F1 0.639->0.697, ROC +0.030).
+    overrides:
+      preprocessing:
+        add_missingness_features: true
+  PAH:
+    file: "YARISMA_TRAIN_PAH.csv"
+    pdf_announced_distribution: "200 Patojenik / 200 Benign"
+    # ADIM 1 (2026-05-23) REDDEDILDI: BorderlineSMOTE F1 0.711 -> 0.677 (-0.034).
+    # ADIM 2 (2026-05-24) REDDEDILDI: Platt kalibrasyon F1 0.711 -> 0.703 (holdout maliyeti).
+    # ADIM 3A (2026-05-24) KABUL (marjinal): manual_multiplier {0: 1.5}.
+    # F1 0.7109 -> 0.7171 (+0.0062, ROADMAP'taki "0.715-0.72 marjinal kabul" araliginda).
+    # Spec 0.396 -> 0.404 (hipotez 0.50+ idi, ulasilamadi - artis ~1 SE icinde).
+    # Yine de maliyet sifir, override kaliyor. PDF uyumlu.
+    overrides:
+      # ADIM 8 (2026-06-22): prior-shift esik dengesizligi KARAR ANINDA ele aldigi icin
+      # agir benign class-weight (eski {0:1.5}xbalanced=4.59) olasiliklari carpitip
+      # esigi patolojik dusuge (0.205) itiyordu -> benign-agir test'te dusuk precision.
+      # cost-sensitive KAPATILDI; dengesizlik prior-shift esige birakildi (decoupling).
+      class_balance:
+        cost_sensitive: false
+      # ADIM 7 (2026-06-21): f1_pos SFS doygun (skorlar ~0.9137'de duz, gradyan yok)
+      # -> eqdist ROC-AUC 0.503 (rastgele). roc_auc scoring ile ayirt edici ozellik secimi.
+      feature_selection:
+        scoring: "roc_auc"
+  CFTR:
+    file: "YARISMA_TRAIN_CFTR.csv"
+    pdf_announced_distribution: "70 Patojenik / 70 Benign"
+    # ADIM 7 (2026-06-21): zayif sinyal (eqdist ROC 0.635) + f1_pos SFS doygun
+    # (skorlar ~0.9474'te duz). roc_auc scoring ile ayirt edici ozellik araniyor.
+    overrides:
+      # ADIM 8 (2026-06-22): cost-sensitive kapatildi; dengesizlik prior-shift esige birakildi.
+      class_balance:
+        cost_sensitive: false
+      preprocessing:
+        add_missingness_features: true
+      feature_selection:
+        scoring: "roc_auc"
+    # ADIM 3B (2026-05-24) REDDEDILDI: bagging_temperature [0.5,1.0,2.0] grid'i.
+    # F1 0.7174 -> 0.7078 (-0.0096), std 0.1091 -> 0.1076 (ihmal edilebilir).
+    # Best temp=0.5 secildi -> proba dagilimi sikisti -> threshold patolojik
+    # noktaya (0.050) kaydi. Kirilgan model. Override silindi, baseline grid'e donuldu.
+
+# 3.1-3.4 - Veri On Isleme
+preprocessing:
+  numeric_imputation: "median"
+  # ADIM 8 (2026-06-22): bilgilendirici eksiklik (MNAR). MISS__count/frac + EK_*__isna.
+  # Lever 2 sonucu: KANSER (ROC 0.894->0.924) + CFTR fayda; MASTER/PAH ROC dustu.
+  # Bu yuzden GLOBAL KAPALI; KANSER ve CFTR'de panel-override ile ACIK.
+  add_missingness_features: false
+  # ADIM 9 (2026-06-24) REDDEDILDI: agrega ozellikler + SFS30 ROC'u DUSURDU
+  # (ort F1 0.546 -> 0.512; KANSER 0.697->0.613). Veri sinyal tavanina ulasildi.
+  # Kod yerinde duruyor ama flag KAPALI; 0.546 config kesinlesti.
+  add_engineered_features: false
+  use_catboost_native_categorical: true
+  categorical_prefixes: ["CAT_", "AA_"]
+  numeric_prefixes: ["AL_", "EK_"]
+  id_columns: ["Variant_ID"]
+  target_column: "Label"
+  drop_full_duplicates: true
+  drop_conflict_label_duplicates: true
+  outlier_detection:
+    enabled: true
+    method: "iqr"
+    iqr_multiplier: 3.0
+
+# 3.5 - Sinif Dengesi
+class_balance:
+  use_smote: true
+  smote_method: "SMOTENC"
+  smote_k_neighbors: 5
+  smote_random_state: 42
+  cost_sensitive: true
+  # ADIM 6 (2026-06-19) — 18 Haz 2026 toplantisi:
+  # "F1 patojenik-odakli hesaplanacak. Macro degil, pos_label=1 (patojenik) F1."
+  # Yarisma resmi metrigi = f1_pos (patojenik sinifin F1'i).
+  # Eski "macro_f1_max" hala model.py'da destekleniyor, ama default degisti.
+  threshold_strategy: "f1_pos_max"
+  threshold_search_step: 0.005
+  # ADIM 8 (2026-06-22) PRIOR-SHIFT (label shift) duzeltmesi:
+  # Egitim ~%80 patojenik ama TEST ~%20 patojenik (yarisma TERSI). Karar esigi
+  # bu deger ile TEST prior'una gore (egitim verisi uzerinde, sample-weight ile)
+  # secilir. Boylece esik gercek yarisma dagilimini hedefler (Lipton 2014).
+  # null yaparsan eski davranis (esik val fold'unda secilir).
+  deployment_test_pos_frac: 0.2
+  # ADIM 2 (2026-05-24) REDDEDILDI: Platt holdout-based kalibrasyon
+  # PAH F1 0.7109 -> 0.7035 (-0.0074), ROC-AUC 0.661 -> 0.632 (-0.029).
+  # Platt monotonik donusum -> ROC-AUC'yi DEGISTIRMEMELI. Dustugu icin
+  # net teshis: %20 holdout (~58 ornek) PAH'i kucuk verisinden mahrum etti.
+  # Kalibrasyon faydasi << holdout maliyeti (kucuk panellerde).
+  # CFTR icin holdout azinligi yetersiz (4<5), kalibrasyon zaten uygulanmadi.
+  # Kod yerinde duruyor — gelecekte CalibratedClassifierCV(cv=3) ile denenebilir.
+  # "none" | "platt" (sigmoid) | "isotonic"
+  calibration: "none"
+  calibration_holdout_fraction: 0.2
+  calibration_min_minority: 5
+
+  # ADIM 4 (2026-05-24): STACKING ENSEMBLE
+  # CatBoost + LightGBM + XGBoost -> Meta-CatBoost (ana karar verici).
+  # PDF uyumu: meta-learner CatBoost; base'ler yardimci.
+  # Beklenti: tum panellerde +0.02-0.04 F1, CFTR varyansi multi-seed ile duser.
+  # Tahmini calisma suresi: ~15-25 dk/panel (full mode, 100 MC repeats).
+  use_stacking: true
+  stacking_inner_folds: 3     # OOF meta-feature uretimi (3 hizli, 5 stabil)
+  stacking_n_seeds: 2         # Full-train refit multi-seed (varyans ↓)
+  stacking_base_iterations: 300  # LGB/XGB ve fold-CatBoost iterations
+  # ADIM 10 (2026-06-25): PSR 4.5 KALİBRASYON taahhudu. Meta-seviye CV OOF uzerinde
+  # izotonik kalibrasyon (holdout israfi yok). Monoton -> F1/etiketler degismez,
+  # olasilik guvenilirligi artar (reliability). prior-shift esik ile uyumlu.
+  calibrate_stacking: true
+
+# 3.6 - Ozellik Secimi (SFS)
+feature_selection:
+  enabled: true
+  direction: "forward"
+  # ADIM 6 (2026-06-19): SFS scoring f1_macro -> f1_pos (patojenik odakli).
+  scoring: "f1_pos"
+  n_features_to_select: 25  # ADIM 9 reddedildi; 30 ROC'u dusurdu -> 25'e donuldu
+  cv_folds: 3
+  sfs_estimator_iterations: 200
+  sfs_estimator_depth: 4
+  sfs_estimator_learning_rate: 0.1
+  # Plateau early stop - varsayilan KAPALI (PDF birebir uyum icin).
+  # patience=999 -> early stop yok (PDF: tam n_features_to_select'e kadar git).
+  early_stop_patience: 999
+  min_score_improvement: 0.0
+
+# 4.1 - Deney Protokolu: 100 Tekrarli Monte Carlo Capraz Dogrulama
+monte_carlo_cv:
+  n_repeats: 100
+  test_size: 0.2
+  stratified: true
+  random_state_base: 1000
+
+  # ADIM 5 - Reverse-distribution validation (yarisma final kosullarina uyum):
+  # Yarisma sartnamesi: train ~80% pat / 20% ben, test ~80% ben / 20% pat (TERSI).
+  # Bu bayrak aktifken test set stratify benign-agirlikli olur. CLI argumani:
+  #     python train.py --reverse-test-dist --reverse-eval-repeats 10
+  reverse_test_dist: false
+  reverse_test_benign_frac: 0.8
+
+# 5.3 - Hiperparametre Optimizasyonu (CatBoost yerlesik Grid Search)
+hyperparameter_grid:
+  iterations: [500]
+  learning_rate: [0.03, 0.05, 0.1]
+  depth: [4, 6, 8]
+  l2_leaf_reg: [1.0, 3.0, 5.0]
+  border_count: [128]
+
+catboost_fixed:
+  loss_function: "Logloss"
+  eval_metric: "F1"
+  bootstrap_type: "Bayesian"
+  od_type: "Iter"
+  od_wait: 50
+  verbose: 0
+  random_seed: 42
+
+# 4.4 - Aciklanabilirlik (SHAP)
+explainability:
+  enabled: true
+  shap_max_display: 25
+  background_sample_size: 200
+
+# 4.2 - Performans Metrikleri (panel bazli raporlama)
+# ADIM 6 (2026-06-19): primary metrik f1_macro -> f1_pos (patojenik-odakli F1).
+# f1_macro hala raporlaniyor (bilgilendirici), ama yarisma puanlamasi f1_pos.
+metrics:
+  primary: "f1_pos"
+  report:
+    - "f1_pos"           # YARISMA RESMI METRIGI (patojenik F1)
+    - "f1_macro"         # eski varsayilan (bilgi amacli)
+    - "f1_macro"         # eski varsayilan (bilgi amacli)
+    - "accuracy"
+    - "roc_auc"
+    - "pr_auc"
+    - "cohen_kappa"
+    - "sensitivity"
+    - "specificity"
+    - "precision_macro"
+
+# Pratik kosturma modlari
+runtime:
+  mode: "full"
+  quick_overrides:
+    monte_carlo_cv_n_repeats: 5
+    feature_selection_n_features_to_select: 10
+    feature_selection_early_stop_patience: 3
+    feature_selection_min_score_improvement: 0.002
+    feature_selection_sfs_iterations: 50
+    feature_selection_sfs_cv_folds: 2
+    feature_selection_subsample: 800
+    hyperparameter_grid:
+      iterations: [300]
+      learning_rate: [0.05]
+      depth: [6]
+      l2_leaf_reg: [3.0]
+      border_count: [128]
+  random_seed: 42
+  n_jobs: -1
