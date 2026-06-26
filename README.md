@@ -69,7 +69,22 @@ python train.py --reverse-test-dist --reverse-eval-repeats 10 --force --panels M
 
 Eğitim, her panel için `models/<PANEL>/` altına modeli (`stacking_ensemble.pkl`),
 `model_meta.json`'ı (seçilen öznitelikler, medyanlar, **prior-shift karar eşiği**) ve
-`outputs/` altına metrikleri yazar.
+`outputs/` altına metrikleri yazar. SHAP özet grafikleri (`SHAP_summary.png`, `SHAP_bar.png`)
+her panel için `outputs/<PANEL>/` (veya `outputs_reverse_eval/<PANEL>/`) altında otomatik üretilir.
+
+## Rapor görselleri
+
+Karmaşıklık matrisleri, panel karşılaştırma grafiği, MCC dahil metrik tablosu ve SHAP
+grafiklerini tek klasörde toplamak için, eğitimin ardından:
+
+```bash
+python train.py --reverse-test-dist --reverse-eval-repeats 10 --force --panels MASTER KANSER PAH CFTR
+python report_figures.py --results-dir outputs_reverse_eval --out outputs_report
+# (eqdist sonuçları için: --results-dir outputs)
+```
+
+Çıktılar `outputs_report/` altına yazılır: `cm_<PANEL>.png`, `panel_comparison.png`,
+`report_metrics.json` ve toplanan `SHAP_summary_<PANEL>.png` dosyaları.
 
 ## Tahmin (final çıkarım)
 
