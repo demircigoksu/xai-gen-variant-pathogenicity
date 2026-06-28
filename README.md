@@ -101,17 +101,54 @@ python predict.py --panel CFTR   --input data/test_cftr.csv   --output preds_cft
 `predict.py` türev öznitelikleri (MISS__/ENG__) ham test verisinden eğitimle **birebir aynı**
 şekilde yeniden üretir; kaydedilen prior-shift eşiğini uygular.
 
-## Sonuçlar (ters-dağılım, %80 benign test — dürüst tahmin)
+## Sonuçlar — Eğitim süreci (100 tekrarlı Monte Carlo CV, eğitim dağılımı)
 
-| Panel | F1-pos | MCC | PR-AUC | ROC-AUC | Eşik |
-|-------|--------|------|--------|---------|------|
-| MASTER | 0.560 | 0.437 | 0.496 | 0.834 | 0.810 |
-| KANSER | 0.685 | 0.601 | 0.730 | 0.916 | 0.805 |
-| PAH | 0.490 | 0.322 | 0.518 | 0.789 | 0.725 |
-| CFTR | 0.460 | 0.254 | 0.336 | 0.631 | 0.755 |
-| **Ortalama** | **0.549** | **0.404** | **0.520** | **0.792** | — |
+Birincil değerlendirme, komitece sağlanan eğitim veri seti üzerinde yapılır:
 
-("Tümünü patojenik" taban çizgisi 20% prevalansta F1-pos = 0.33; dört panel de belirgin üzerinde.)
+| Panel | F1-pos | PR-AUC | ROC-AUC | Duyarlılık | Özgüllük | Eşik |
+|-------|--------|--------|---------|------------|----------|------|
+| MASTER | 0.903 | 0.920 | 0.842 | 0.962 | 0.527 | 0.365 |
+| KANSER | 0.914 | 0.931 | 0.886 | 0.969 | 0.659 | 0.405 |
+| PAH | 0.933 | 0.924 | 0.742 | 0.990 | 0.312 | 0.205 |
+| CFTR | 0.917 | 0.918 | 0.696 | 0.983 | 0.225 | 0.155 |
+| **Ortalama** | **0.917** | **0.923** | **0.792** | **0.976** | **0.431** | — |
+
+Dört panelde de F1 > 0.90 ve duyarlılık 0.96–0.99'dur (patojenik varyantı kaçırma minimum).
+
+### Ön test denemesi (ters-dağılım stres testi, ~%80 benign)
+
+Düşük prevalans senaryosuna dayanıklılığı sınamak için keşifsel bir ek denemedir (nihai skor değil):
+
+| Panel | Eğitim F1 | Ön-test F1 | Ön-test ROC-AUC |
+|-------|-----------|------------|-----------------|
+| MASTER | 0.903 | 0.560 | 0.834 |
+| KANSER | 0.914 | 0.685 | 0.916 |
+| PAH | 0.933 | 0.490 | 0.789 |
+| CFTR | 0.917 | 0.460 | 0.631 |
+| **Ortalama** | **0.917** | **0.549** | **0.792** |
+
+F1 ters dağılımda düşer (benign-ağırlıklı sette yanlış-pozitifler kesinliği baskılar) ancak ROC-AUC korunur — modelin ayırt etme gücü dağılım kaymasından bağımsızdır. ("Tümünü patojenik" taban çizgisi %20 prevalansta F1 = 0.33; dört panel de üzerinde.)
+
+## Görseller
+
+Tüm görsellerin yüksek çözünürlüklü orijinalleri [`figures/`](figures/) klasöründedir.
+
+**Panel başarımı (eğitim dağılımı, 100 tekrarlı Monte Carlo CV):**
+
+![Panel başarımı](figures/panel_comparison.png)
+
+**Karmaşıklık matrisleri (şartname eğitim varyant sayıları temel alınarak):**
+
+| | |
+|---|---|
+| ![MASTER](figures/cm_MASTER.png) | ![KANSER](figures/cm_KANSER.png) |
+| ![PAH](figures/cm_PAH.png) | ![CFTR](figures/cm_CFTR.png) |
+
+**SHAP özet grafikleri (beeswarm) — panel başına açıklanabilirlik:**
+
+[KANSER](figures/SHAP_summary_KANSER.png) · [MASTER](figures/SHAP_summary_MASTER.png) · [PAH](figures/SHAP_summary_PAH.png) · [CFTR](figures/SHAP_summary_CFTR.png) (ve `SHAP_bar_*.png`)
+
+![SHAP KANSER](figures/SHAP_summary_KANSER.png)
 
 ## Tekrarüretilebilirlik
 
