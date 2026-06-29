@@ -149,4 +149,16 @@ Tüm görsellerin yüksek çözünürlüklü orijinalleri [`figures/`](figures/)
 
 **SHAP özet grafikleri (beeswarm), panel başına açıklanabilirlik:**
 
-[KANSER](figures/SHAP_summary_KANSER.png) · [M
+[KANSER](figures/SHAP_summary_KANSER.png) · [MASTER](figures/SHAP_summary_MASTER.png) · [PAH](figures/SHAP_summary_PAH.png) · [CFTR](figures/SHAP_summary_CFTR.png) (ve `SHAP_bar_*.png`)
+
+![SHAP KANSER](figures/SHAP_summary_KANSER.png)
+
+## Tekrarüretilebilirlik
+
+- Tüm rastgelelik tohumlanmıştır (`config.yaml: runtime.random_seed`, `monte_carlo_cv.random_state_base`).
+- Eğitim panel başına dakikalar; çıkarım milisaniye–saniye düzeyinde (final ~30 dk sınırının çok altında).
+- `config.yaml` tek doğruluk kaynağıdır; panel-bazlı override'lar (örn. PAH/CFTR `cost_sensitive: false`, KANSER/CFTR `add_missingness_features: true`) panellerin `overrides` bölümündedir.
+
+## Lisans / Atıf
+
+Yöntem; AlphaMissense, EVE, PrimateAI, MutPred2, REVEL, eşik seçimi (Lipton, Saerens), informative missingness (Van Ness), CatBoost (Prokhorenkova), SMOTE (Chawla) ve SHAP (Lundberg) çalışmalarına dayanır. Ayrıntılar Proje Detay Raporu'ndadır.
