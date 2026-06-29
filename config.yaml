@@ -91,14 +91,19 @@ class_balance:
   # "F1 patojenik-odakli hesaplanacak. Macro degil, pos_label=1 (patojenik) F1."
   # Yarisma resmi metrigi = f1_pos (patojenik sinifin F1'i).
   # Eski "macro_f1_max" hala model.py'da destekleniyor, ama default degisti.
-  threshold_strategy: "f1_pos_max"
+  # ADIM 11 (2026-06-28): KLİNİK OPERASYON NOKTASI. Karar eşiği dengeli ayrımı
+  # (Youden-J = duyarlılık+özgüllük−1) maksimize eden noktada seçilir.
+  # balanced_accuracy_max, (sens+spec)/2'yi maksimize ettiğinden Youden-J ile aynı
+  # eşiği verir; prevalanstan bağımsız olduğu için prior-shift gerektirmez.
+  threshold_strategy: "balanced_accuracy_max"
   threshold_search_step: 0.005
   # ADIM 8 (2026-06-22) PRIOR-SHIFT (label shift) duzeltmesi:
   # Egitim ~%80 patojenik ama TEST ~%20 patojenik (yarisma TERSI). Karar esigi
   # bu deger ile TEST prior'una gore (egitim verisi uzerinde, sample-weight ile)
   # secilir. Boylece esik gercek yarisma dagilimini hedefler (Lipton 2014).
   # null yaparsan eski davranis (esik val fold'unda secilir).
-  deployment_test_pos_frac: 0.2
+  # ADIM 11: Youden-J prevalanstan bağımsız olduğundan prior-shift KAPALI (null).
+  deployment_test_pos_frac: null
   # ADIM 2 (2026-05-24) REDDEDILDI: Platt holdout-based kalibrasyon
   # PAH F1 0.7109 -> 0.7035 (-0.0074), ROC-AUC 0.661 -> 0.632 (-0.029).
   # Platt monotonik donusum -> ROC-AUC'yi DEGISTIRMEMELI. Dustugu icin

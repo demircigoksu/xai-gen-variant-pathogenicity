@@ -101,33 +101,30 @@ python predict.py --panel CFTR   --input data/test_cftr.csv   --output preds_cft
 `predict.py` türev öznitelikleri (MISS__/ENG__) ham test verisinden eğitimle **birebir aynı**
 şekilde yeniden üretir; kaydedilen prior-shift eşiğini uygular.
 
-## Sonuçlar — Eğitim süreci (100 tekrarlı Monte Carlo CV, eğitim dağılımı)
+## Sonuçlar — dengeli (Youden-J) operasyon noktası
 
-Birincil değerlendirme, komitece sağlanan eğitim veri seti üzerinde yapılır:
+Konuşlandırılan model, karar eşiğini dengeli ayrımı (Youden-J = duyarlılık+özgüllük−1) maksimize eden noktada seçer (`threshold_strategy: balanced_accuracy_max`). Eğitim seti üzerinde 100 tekrarlı Monte Carlo CV:
 
 | Panel | F1-pos | PR-AUC | ROC-AUC | Duyarlılık | Özgüllük | Eşik |
 |-------|--------|--------|---------|------------|----------|------|
-| MASTER | 0.903 | 0.920 | 0.842 | 0.962 | 0.527 | 0.365 |
-| KANSER | 0.914 | 0.931 | 0.886 | 0.969 | 0.659 | 0.405 |
-| PAH | 0.933 | 0.924 | 0.742 | 0.990 | 0.312 | 0.205 |
-| CFTR | 0.917 | 0.918 | 0.696 | 0.983 | 0.225 | 0.155 |
-| **Ortalama** | **0.917** | **0.923** | **0.792** | **0.976** | **0.431** | — |
+| MASTER | 0.864 | 0.912 | 0.839 | 0.837 | 0.724 | 0.670 |
+| KANSER | 0.898 | 0.930 | 0.899 | 0.883 | 0.817 | 0.420 |
+| PAH | 0.820 | 0.913 | 0.732 | 0.763 | 0.639 | 0.725 |
+| CFTR | 0.760 | 0.890 | 0.680 | 0.703 | 0.690 | 0.755 |
+| **Ortalama** | **0.836** | **0.911** | **0.788** | **0.797** | **0.718** | — |
 
-Dört panelde de F1 > 0.90 ve duyarlılık 0.96–0.99'dur (patojenik varyantı kaçırma minimum).
+### Operasyon noktası: F1-maks vs dengeli
 
-### Ön test denemesi (ters-dağılım stres testi, ~%80 benign)
+Eşik yalnızca F1'i en üst seviyeye çekecek biçimde seçilseydi duyarlılık ~0.98'e çıkar ama özgüllük ~0.43'e düşerdi (model neredeyse her şeye "patojenik" der). Dengeli eşik bu takası düzeltir:
 
-Düşük prevalans senaryosuna dayanıklılığı sınamak için keşifsel bir ek denemedir (nihai skor değil):
+| Panel | Doğru benign (F1-maks) | Doğru benign (dengeli) |
+|-------|------------------------|------------------------|
+| MASTER | 412 / 782 | **566 / 782** |
+| KANSER | 79 / 120 | **98 / 120** |
+| PAH | 19 / 62 | **40 / 62** |
+| CFTR | 5 / 21 | **14 / 21** |
 
-| Panel | Eğitim F1 | Ön-test F1 | Ön-test ROC-AUC |
-|-------|-----------|------------|-----------------|
-| MASTER | 0.903 | 0.560 | 0.834 |
-| KANSER | 0.914 | 0.685 | 0.916 |
-| PAH | 0.933 | 0.490 | 0.789 |
-| CFTR | 0.917 | 0.460 | 0.631 |
-| **Ortalama** | **0.917** | **0.549** | **0.792** |
-
-F1 ters dağılımda düşer (benign-ağırlıklı sette yanlış-pozitifler kesinliği baskılar) ancak ROC-AUC korunur — modelin ayırt etme gücü dağılım kaymasından bağımsızdır. ("Tümünü patojenik" taban çizgisi %20 prevalansta F1 = 0.33; dört panel de üzerinde.)
+Ortalama F1 0.92 → 0.84, ortalama özgüllük 0.43 → 0.72. Youden-J prevalanstan bağımsız olduğundan bu nokta düşük-prevanslı (benign ağırlıklı) gerçek test dağılımında da geçerlidir; ayrı bir prior-shift düzeltmesi gerekmez.
 
 ## Görseller
 
