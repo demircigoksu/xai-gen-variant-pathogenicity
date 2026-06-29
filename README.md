@@ -100,13 +100,13 @@ python predict.py --panel CFTR   --input data/test_cftr.csv   --output preds_cft
 
 Konuşlandırılan model, karar eşiğini dengeli ayrımı (Youden-J = duyarlılık+özgüllük−1) maksimize eden noktada seçer (`threshold_strategy: balanced_accuracy_max`). Eğitim seti üzerinde 100 tekrarlı Monte Carlo CV:
 
-| Panel | F1-pos | PR-AUC | ROC-AUC | Duyarlılık | Özgüllük | Eşik |
-|-------|--------|--------|---------|------------|----------|------|
-| MASTER | 0.864 | 0.912 | 0.839 | 0.837 | 0.724 | 0.670 |
-| KANSER | 0.898 | 0.930 | 0.899 | 0.883 | 0.817 | 0.420 |
-| PAH | 0.820 | 0.913 | 0.732 | 0.763 | 0.639 | 0.725 |
-| CFTR | 0.760 | 0.890 | 0.680 | 0.703 | 0.690 | 0.755 |
-| **Ortalama** | **0.836** | **0.911** | **0.788** | **0.797** | **0.718** | — |
+| Panel | F1-pos | MCC | PR-AUC | ROC-AUC | Duyarlılık | Özgüllük | Eşik |
+|-------|--------|-----|--------|---------|------------|----------|------|
+| MASTER | 0.864 | 0.535 | 0.912 | 0.839 | 0.837 | 0.724 | 0.670 |
+| KANSER | 0.898 | 0.688 | 0.930 | 0.899 | 0.883 | 0.817 | 0.420 |
+| PAH | 0.820 | 0.332 | 0.913 | 0.732 | 0.763 | 0.639 | 0.725 |
+| CFTR | 0.760 | 0.298 | 0.890 | 0.680 | 0.703 | 0.690 | 0.755 |
+| **Ortalama** | **0.836** | **0.463** | **0.911** | **0.788** | **0.797** | **0.718** | — |
 
 ### Operasyon noktası: F1-maks vs dengeli
 
