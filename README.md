@@ -119,7 +119,19 @@ Eşik yalnızca F1'i en üst seviyeye çekecek biçimde seçilseydi duyarlılık
 | PAH | 307 → 237 / 310 | 19 → **40** / 62 |
 | CFTR | 88 → 63 / 90 | 5 → **14** / 21 |
 
-Patojenik isabeti F1-maks eşikte neredeyse tamdır; dengeli eşikte yalnızca ölçülü biçimde düşer (ör. MASTER 2067→1798), buna karşılık benign isabeti belirgin artar (ör. MASTER 412→566, CFTR 5→14). Ortalama F1 0.92 → 0.84, ortalama özgüllük 0.43 → 0.72; ortalama duyarlılık 0.98 → 0.80. Youden-J prevalanstan bağımsız olduğundan bu nokta düşük-prevanslı (benign ağırlıklı) gerçek test dağılımında da geçerlidir; ayrı bir prior-shift düzeltmesi gerekmez.
+Patojenik isabeti F1-maks eşikte neredeyse tamdır; dengeli eşikte yalnızca ölçülü biçimde düşer (ör. MASTER 2067→1798), buna karşılık benign isabeti belirgin artar (ör. MASTER 412→566, CFTR 5→14). Ortalama F1 0.92 → 0.84, ortalama özgüllük 0.43 → 0.72; ortalama duyarlılık 0.98 → 0.80.
+
+### Neden dengeli? — test koşulunun simülasyonu
+
+Şartname (7.3) sıralama metriği F1'i (pozitif=patojenik) **benign-ağırlıklı test setinde** hesaplar. Şartnamedeki test sayılarıyla (ör. MASTER 500 patojenik / 3000 benign) simüle ettiğimizde, ilk modelin düşük eşiği binlerce yanlış-pozitif üretip test F1'ini çökertir; dengeli eşik hem F1 hem MCC'de öne geçer:
+
+| Operasyon noktası | Eğitim F1 | Test F1 (sim.) | Test MCC (sim.) |
+|-------------------|-----------|----------------|-----------------|
+| İlk model (F1-maks) | 0.917 | 0.449 | 0.335 |
+| **Dengeli / Youden-J (seçilen)** | **0.836** | **0.529** | **0.411** |
+| Prior-shift (alternatif) | — | 0.512 | 0.391 |
+
+Eğitim metrikleri tek başına aldatıcıdır (ilk model eğitimde daha yüksek F1 ve MCC verir); ama puanlanan test koşulunda dengeli eşik kazanır. Youden-J prevalanstan bağımsız olduğundan düşük-prevanslı gerçek test dağılımında da geçerlidir; ayrı bir prior-shift düzeltmesi gerekmez.
 
 ## Görseller
 
