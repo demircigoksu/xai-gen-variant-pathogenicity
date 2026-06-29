@@ -112,14 +112,14 @@ Konuşlandırılan model, karar eşiğini dengeli ayrımı (Youden-J = duyarlıl
 
 Eşik yalnızca F1'i en üst seviyeye çekecek biçimde seçilseydi duyarlılık ~0.98'e çıkar ama özgüllük ~0.43'e düşerdi (model neredeyse her şeye "patojenik" der). Dengeli eşik bu takası düzeltir:
 
-| Panel | Doğru benign (F1-maks) | Doğru benign (dengeli) |
-|-------|------------------------|------------------------|
-| MASTER | 412 / 782 | **566 / 782** |
-| KANSER | 79 / 120 | **98 / 120** |
-| PAH | 19 / 62 | **40 / 62** |
-| CFTR | 5 / 21 | **14 / 21** |
+| Panel | Doğru patojenik: F1-maks → dengeli | Doğru benign: F1-maks → dengeli |
+|-------|------------------------------------|---------------------------------|
+| MASTER | 2067 → 1798 / 2149 | 412 → **566** / 782 |
+| KANSER | 260 → 237 / 268 | 79 → **98** / 120 |
+| PAH | 307 → 237 / 310 | 19 → **40** / 62 |
+| CFTR | 88 → 63 / 90 | 5 → **14** / 21 |
 
-Ortalama F1 0.92 → 0.84, ortalama özgüllük 0.43 → 0.72. Youden-J prevalanstan bağımsız olduğundan bu nokta düşük-prevanslı (benign ağırlıklı) gerçek test dağılımında da geçerlidir; ayrı bir prior-shift düzeltmesi gerekmez.
+Patojenik isabeti F1-maks eşikte neredeyse tamdır; dengeli eşikte yalnızca ölçülü biçimde düşer (ör. MASTER 2067→1798), buna karşılık benign isabeti belirgin artar (ör. MASTER 412→566, CFTR 5→14). Ortalama F1 0.92 → 0.84, ortalama özgüllük 0.43 → 0.72; ortalama duyarlılık 0.98 → 0.80. Youden-J prevalanstan bağımsız olduğundan bu nokta düşük-prevanslı (benign ağırlıklı) gerçek test dağılımında da geçerlidir; ayrı bir prior-shift düzeltmesi gerekmez.
 
 ## Görseller
 
