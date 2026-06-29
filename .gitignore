@@ -2,14 +2,12 @@
 data/
 *.csv
 
-# Eğitilmiş modeller ve çıktılar (büyük; yerelde üretilir)
-models/
+# Çıktılar ve ara dosyalar (büyük; yerelde üretilir)
 models_reverse_eval/
 outputs/
 outputs_reverse_eval/
 archive/
-*.pkl
-*.cbm
+# Not: models/ (eğitilmiş Youden modeli) KASITLI olarak depoya dahildir.
 
 # Python
 __pycache__/
